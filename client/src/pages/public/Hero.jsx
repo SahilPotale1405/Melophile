@@ -1,4 +1,4 @@
-import heroImage from "D:/Melophile/client/src/assets/guitarBoy.png";
+import heroImage from "/src/assets/guitarBoy.png";
 
 function Hero() {
   return (
