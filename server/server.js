@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const instrumentRoutes = require("./routes/instrumentRoutes");
+const studentRoutes = require("./routes/studentRoutes");
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/instruments", instrumentRoutes);
+app.use("/api/students", studentRoutes);
 
 const PORT = process.env.PORT || 5000;
 
