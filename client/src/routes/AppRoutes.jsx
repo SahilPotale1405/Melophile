@@ -2,35 +2,55 @@ import { Routes, Route } from "react-router-dom";
 
 import PublicLayout from "../layouts/PublicLayout";
 import AdminLayout from "../layouts/AdminLayout";
+import StudentLayout from "../layouts/StudentLayout";
 
-import Home from "../pages/public/Home"
+import Home from "../pages/public/Home";
 import Login from "../pages/auth/Login";
 import Dashboard from "../pages/admin/Dashboard";
 import Students from "../pages/admin/Students";
 import Register from "../pages/auth/Register";
-
+import StudentDashboard from "../pages/student/Dashboard";
 
 function AppRoutes() {
-  return (
-    <Routes>
-        <Route element={<PublicLayout />}>
-        <Route path="/" element={<Home />} />
-        </Route>
-        
-        <Route path="/login" element={<Login/>}/>
+    return (
+        <Routes>
 
-        <Route element={<AdminLayout/>}>
-        <Route path="/admin/dashboard" element={<Dashboard/>} />
+            {/* Public pages */}
+            <Route element={<PublicLayout />}>
+                <Route path="/" element={<Home />} />
+            </Route>
 
-        <Route path="/admin/students" element={<Students />} />
+            {/* Login */}
+            <Route path="/login" element={<Login />} />
 
-        <Route path="/register" element={<Register />} />
-      </Route>
+            {/* Admin pages */}
+            <Route element={<AdminLayout />}>
+                <Route
+                    path="/admin/dashboard"
+                    element={<Dashboard />}
+                />
 
-    </Routes>
+                <Route
+                    path="/admin/students"
+                    element={<Students />}
+                />
 
-    
-  );
+                <Route
+                    path="/register"
+                    element={<Register />}
+                />
+            </Route>
+
+            {/* Student pages */}
+            <Route element={<StudentLayout />}>
+                <Route
+                    path="/student/dashboard"
+                    element={<StudentDashboard />}
+                />
+            </Route>
+
+        </Routes>
+    );
 }
 
 export default AppRoutes;

@@ -61,5 +61,41 @@ router.get("/", async (req, res) => {
         });
     }
 });
+// Student Login
+router.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
+        const student = await Student.findOne({ email });
+
+        if (!student) {
+            return res.status(400).json({
+                message: "Invalid email or password"
+            });
+        }
+
+        const isPasswordCorrect = await bcrypt.compare(
+            password,
+            student.password
+        );
+
+        if (!isPasswordCorrect) {
+            return res.status(400).json({
+                message: "Invalid email or password"
+            });
+        }
+
+        res.json({
+            message: "Login successful",
+            student
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Login failed"
+        });
+    }
+});
 module.exports= router;
