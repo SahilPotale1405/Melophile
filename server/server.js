@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const instrumentRoutes = require("./routes/instrumentRoutes");
 const studentRoutes = require("./routes/studentRoutes");
+const sessionRoutes = require("./routes/sessionRoutes");
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/instruments", instrumentRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 const PORT = process.env.PORT || 5000;
 

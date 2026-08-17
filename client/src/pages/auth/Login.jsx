@@ -5,37 +5,41 @@ function Login() {
     const [password, setPassword] = useState("");
 
     const handleLogin = async () => {
-        try {
-            const response = await fetch(
-                "http://localhost:5000/api/students/login",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        email,
-                        password,
-                    }),
-                }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                alert(data.message);
-                return;
+    try {
+        const response = await fetch(
+            "http://localhost:5000/api/students/login",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
             }
+        );
 
-            alert("Login successful!");
+        const data = await response.json();
 
-            console.log("Logged in student:", data.student);
-
-        } catch (error) {
-            console.error(error);
-            alert("Unable to connect to server");
+        if (!response.ok) {
+            alert(data.message);
+            return;
         }
-    };
+
+        // Save logged-in student's ID
+        localStorage.setItem("studentId", data.student._id);
+
+        alert("Login successful!");
+
+        // Keep your existing navigation here
+        // navigate("/student/dashboard");
+
+    } catch (error) {
+        console.error(error);
+        alert("Unable to connect to server");
+    }
+};
 
     return (
         <div className="min-h-screen bg-black text-white flex items-center justify-center">

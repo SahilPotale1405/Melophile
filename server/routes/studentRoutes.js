@@ -32,9 +32,11 @@ router.post("/register",async(req ,res) => {
 
         await student.save();
 
+        const studentData = student.toObject();
+        delete studentData.password;
         res.status(201).json({
             message:"Student registeres successfully",
-            student
+            student: studentData
         });
 
     } catch (error){
@@ -84,10 +86,11 @@ router.post("/login", async (req, res) => {
                 message: "Invalid email or password"
             });
         }
-
+        const studentData = student.toObject();
+        delete studentData.password;
         res.json({
             message: "Login successful",
-            student
+            student: studentData
         });
 
     } catch (error) {
@@ -95,6 +98,30 @@ router.post("/login", async (req, res) => {
 
         res.status(500).json({
             message: "Login failed"
+        });
+    }
+});
+
+// Get student by ID
+router.get("/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id)
+            .select("-password")
+            .populate("instrument");
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        res.json(student);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to fetch student"
         });
     }
 });
