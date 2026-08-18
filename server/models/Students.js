@@ -11,6 +11,8 @@ const studentSchema = new mongoose.Schema(
             type: String,
             required: true,
             unique: true,
+            lowercase: true,
+            trim: true,
         },
 
         phone: {
@@ -20,7 +22,7 @@ const studentSchema = new mongoose.Schema(
 
         password: {
             type: String,
-            required: true,
+            required: false,
         },
 
         instrument: {
@@ -37,13 +39,18 @@ const studentSchema = new mongoose.Schema(
 
         status: {
             type: String,
-            enum: ["Active", "Renew Soon", "Inactive"],
-            default: "Active",
+            enum: ["Pending", "Active", "Renew Soon", "Inactive"],
+            default: "Pending",
         },
 
         sessionsLeft: {
             type: Number,
             default: 0,
+        },
+
+        mustChangePassword: {
+            type: Boolean,
+            default: false,
         },
     },
     {

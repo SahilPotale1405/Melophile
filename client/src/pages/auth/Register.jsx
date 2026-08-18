@@ -7,7 +7,6 @@ function Register() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
-    const [password, setPassword] = useState("");
     const [instrument, setInstrument] = useState("");
 
     useEffect(() => {
@@ -17,9 +16,7 @@ function Register() {
             .catch((error) => console.log(error));
     }, []);
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
-
+    const handleRegister = async () => {
         try {
             const response = await fetch(
                 "http://localhost:5000/api/students/register",
@@ -32,7 +29,6 @@ function Register() {
                         name,
                         email,
                         phone,
-                        password,
                         instrument,
                     }),
                 }
@@ -45,83 +41,76 @@ function Register() {
                 return;
             }
 
-            console.log("Registration successful:", data);
-            alert("Student registered successfully!");
+            alert(data.message);
 
             setName("");
             setEmail("");
             setPhone("");
-            setPassword("");
             setInstrument("");
 
         } catch (error) {
             console.error(error);
-            alert("Something went wrong. Please try again.");
+            alert("Unable to connect to server");
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+
             <div className="bg-white p-8 rounded-xl shadow-lg w-96">
 
-                <h1 className="text-3xl font-bold text-center mb-6">
+                <h1 className="text-3xl font-bold text-center mb-3">
                     Student Registration
                 </h1>
 
-                <form onSubmit={handleRegister}>
+                <p className="text-center text-gray-500 text-sm mb-6">
+                    Submit your details to join Melophile
+                </p>
 
-                    <input
-                        type="text"
-                        placeholder="Full Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full p-3 mb-4 rounded-lg border"
-                        required
-                    />
+                <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full p-3 mb-4 rounded-lg border"
+                />
 
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full p-3 mb-4 rounded-lg border"
-                        required
-                    />
+                <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 mb-4 rounded-lg border"
+                />
 
-                    <input
-                        type="tel"
-                        placeholder="Phone Number"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full p-3 mb-4 rounded-lg border"
-                        required
-                    />
+                <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full p-3 mb-4 rounded-lg border"
+                />
 
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full p-3 mb-4 rounded-lg border"
-                        required
-                    />
+                <InstrumentDropdown
+                    instruments={instruments}
+                    value={instrument}
+                    onChange={setInstrument}
+                />
 
-                    <InstrumentDropdown
-                        instruments={instruments}
-                        value={instrument}
-                        onChange={setInstrument}
-                    />
+                <button
+                    onClick={handleRegister}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg font-semibold mt-4"
+                >
+                    Submit Registration
+                </button>
 
-                    <button
-                        type="submit"
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg font-semibold"
-                    >
-                        Register
-                    </button>
-
-                </form>
+                <p className="text-xs text-gray-500 text-center mt-4">
+                    Your account will be reviewed by the academy before
+                    login credentials are provided.
+                </p>
 
             </div>
+
         </div>
     );
 }

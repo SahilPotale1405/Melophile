@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
     const handleLogin = async () => {
     try {
@@ -30,10 +32,11 @@ function Login() {
         // Save logged-in student's ID
         localStorage.setItem("studentId", data.student._id);
 
-        alert("Login successful!");
-
-        // Keep your existing navigation here
-        // navigate("/student/dashboard");
+        if (data.student.mustChangePassword) {
+            navigate("/student/change-password");
+        } else {
+            navigate("/student/dashboard");
+        }
 
     } catch (error) {
         console.error(error);

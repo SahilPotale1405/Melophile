@@ -4,42 +4,50 @@ const bcrypt = require("bcryptjs");
 
 const router = express.Router();
 
-router.post("/register",async(req ,res) => {
-    try{
-        const{
+router.post("/register", async (req, res) => {
+    try {
+        const {
             name,
             email,
             phone,
-            password,
             instrument
-        }= req.body;
+        } = req.body;
 
-        const existingStudent = await Student.findOne({email});
+        const normalizedEmail = email.trim().toLowerCase();
 
-        if (existingStudent){
+        const existingStudent = await Student.findOne({ email: normalizedEmail });
+
+        if (existingStudent) {
             return res.status(400).json({
                 message: "Student with this email already exists"
             });
         }
-        const hashedPassword = await bcrypt.hash(password,10);
+
         const student = new Student({
             name,
-            email,
+            email:normalizedEmail,
             phone,
-            password: hashedPassword,
-            instrument
+            instrument,
+            status: "Pending"
         });
 
         await student.save();
 
-        const studentData = student.toObject();
-        delete studentData.password;
         res.status(201).json({
-            message:"Student registeres successfully",
-            student: studentData
+            message: "Registration submitted successfully. Please wait for admin approval.",
+            student: {
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                phone: student.phone,
+                instrument: student.instrument,
+                status: student.status,
+                fees: student.fees,
+                sessionsLeft: student.sessionsLeft
+            }
         });
 
-    } catch (error){
+    } catch (error) {
         console.error(error);
 
         res.status(500).json({
@@ -48,10 +56,61 @@ router.post("/register",async(req ,res) => {
     }
 });
 
+// Approve student
+router.put("/approve/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        if (student.status !== "Pending") {
+            return res.status(400).json({
+                message: "Student is already approved"
+            });
+        }
+
+        const temporaryPassword =
+            "Mlp@" + Math.floor(1000 + Math.random() * 9000);
+
+        const hashedPassword = await bcrypt.hash(
+            temporaryPassword,
+            10
+        );
+
+        student.password = hashedPassword;
+        student.status = "Active";
+        student.mustChangePassword = true;
+
+        await student.save();
+
+        res.json({
+            message: "Student approved successfully",
+            student: {
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                status: student.status,
+                mustChangePassword: student.mustChangePassword
+            },
+            temporaryPassword
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to approve student"
+        });
+    }
+});
 // Get all students
 router.get("/", async (req, res) => {
     try {
-        const students = await Student.find();
+        const students = await Student.find().select("-password");
 
         res.json(students);
 
@@ -68,7 +127,16 @@ router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        const student = await Student.findOne({ email });
+        const normalizedEmail = email.trim().toLowerCase();
+
+        console.log("LOGIN EMAIL:", normalizedEmail);
+
+       const student = await Student.findOne({
+    email: normalizedEmail
+});
+
+console.log("LOGIN EMAIL:", normalizedEmail);
+console.log("STUDENT:", student);
 
         if (!student) {
             return res.status(400).json({
@@ -81,23 +149,71 @@ router.post("/login", async (req, res) => {
             student.password
         );
 
+        console.log("PASSWORD MATCH:", isPasswordCorrect);
+
         if (!isPasswordCorrect) {
             return res.status(400).json({
                 message: "Invalid email or password"
             });
         }
+
         const studentData = student.toObject();
         delete studentData.password;
+
         res.json({
             message: "Login successful",
             student: studentData
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("LOGIN ERROR:", error);
 
         res.status(500).json({
             message: "Login failed"
+        });
+    }
+});
+// Change student password
+router.put("/change-password/:id", async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+
+        if (!newPassword) {
+            return res.status(400).json({
+                message: "New password is required"
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                message: "Password must be at least 6 characters"
+            });
+        }
+
+        const student = await Student.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        student.password = hashedPassword;
+        student.mustChangePassword = false;
+
+        await student.save();
+
+        res.json({
+            message: "Password changed successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to change password"
         });
     }
 });
