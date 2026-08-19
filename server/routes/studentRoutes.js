@@ -107,6 +107,111 @@ router.put("/approve/:id", async (req, res) => {
         });
     }
 });
+
+// Update student
+router.put("/:id", async (req, res) => {
+    try {
+        const {
+            name,
+            email,
+            phone,
+            instrument,
+            fees,
+            status,
+            sessionsLeft
+        } = req.body;
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const existingStudent = await Student.findOne({
+            email: normalizedEmail,
+            _id: { $ne: req.params.id }
+        });
+
+        if (existingStudent) {
+            return res.status(400).json({
+                message: "Another student is already using this email"
+            });
+        }
+
+        const student = await Student.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        student.name = name;
+        student.email = normalizedEmail;
+        student.phone = phone;
+        student.instrument = instrument;
+        student.fees = fees;
+        student.status = status;
+        student.sessionsLeft = sessionsLeft;
+
+        await student.save();
+
+        res.json({
+            message: "Student updated successfully",
+            student: {
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                phone: student.phone,
+                instrument: student.instrument,
+                fees: student.fees,
+                status: student.status,
+                sessionsLeft: student.sessionsLeft,
+                mustChangePassword: student.mustChangePassword
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to update student"
+        });
+    }
+});
+
+// Deactivate student
+router.put("/deactivate/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        student.status = "Inactive";
+
+        await student.save();
+
+        res.json({
+            message: "Student deactivated successfully",
+            student: {
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                fees: student.fees,
+                status: student.status,
+                sessionsLeft: student.sessionsLeft
+            }
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to deactivate student"
+        });
+    }
+});
+
 // Get all students
 router.get("/", async (req, res) => {
     try {

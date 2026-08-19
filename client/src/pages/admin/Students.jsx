@@ -35,6 +35,19 @@ function Students() {
         );
     };
 
+    const handleStudentUpdated = (updatedStudent) => {
+        setStudents((currentStudents) =>
+            currentStudents.map((student) =>
+                student._id === updatedStudent._id
+                    ? {
+                          ...student,
+                          ...updatedStudent,
+                      }
+                    : student
+            )
+        );
+    };
+
     if (loading) {
         return <p>Loading students...</p>;
     }
@@ -48,6 +61,7 @@ function Students() {
             <StudentTable
                 students={students}
                 onStudentApproved={handleStudentApproved}
+                onStudentUpdated={handleStudentUpdated}
             />
         </>
     );
