@@ -30,6 +30,8 @@ router.post("/mark-present", async (req, res) => {
             });
         }
 
+
+
         // Check whether the student was already marked present today
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -80,5 +82,21 @@ router.post("/mark-present", async (req, res) => {
     }
 });
 
+        // Get all sessions
+router.get("/", async (req, res) => {
+    try {
+        const sessions = await Session.find()
+            .populate("student", "name email")
+            .sort({ date: -1 });
 
+        res.json(sessions);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to fetch sessions",
+        });
+    }
+});
 module.exports = router;
