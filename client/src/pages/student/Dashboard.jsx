@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 function Dashboard() {
     const [student, setStudent] = useState(null);
+    const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
@@ -14,23 +15,42 @@ function Dashboard() {
             return;
         }
 
-        fetch(`http://localhost:5000/api/students/${studentId}`)
-            .then((res) => {
-                if (!res.ok) {
+        const fetchDashboardData = async () => {
+            try {
+                // Fetch student details
+                const studentResponse = await fetch(
+                    `http://localhost:5000/api/students/${studentId}`
+                );
+
+                if (!studentResponse.ok) {
                     throw new Error("Failed to fetch student");
                 }
 
-                return res.json();
-            })
-            .then((data) => {
-                setStudent(data);
+                const studentData = await studentResponse.json();
+
+                // Fetch student's recent sessions
+                const sessionsResponse = await fetch(
+                    `http://localhost:5000/api/sessions/student/${studentId}`
+                );
+
+                if (!sessionsResponse.ok) {
+                    throw new Error("Failed to fetch sessions");
+                }
+
+                const sessionsData = await sessionsResponse.json();
+
+                setStudent(studentData);
+                setSessions(sessionsData);
                 setLoading(false);
-            })
-            .catch((error) => {
+
+            } catch (error) {
                 console.error(error);
-                setError("Unable to load student details");
+                setError("Unable to load student dashboard");
                 setLoading(false);
-            });
+            }
+        };
+
+        fetchDashboardData();
     }, []);
 
     if (loading) {
@@ -201,20 +221,73 @@ function Dashboard() {
 
                 </div>
 
-                <div className="p-6 rounded-xl bg-gray-50 text-center">
 
-                    <div className="text-3xl mb-2">
-                        🎵
-                    </div>
+                {/* Session List */}
+                <div className="space-y-3">
 
-                    <p className="font-semibold text-gray-900">
-                        Your session history will appear here
-                    </p>
+                    {sessions.length > 0 ? (
 
-                    <p className="text-sm text-gray-500 mt-1">
-                        Sessions will be shown once the academy records
-                        your attendance.
-                    </p>
+                        sessions.map((session) => (
+
+                            <div
+                                key={session._id}
+                                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-purple-50 transition"
+                            >
+
+                                <div className="flex items-center gap-4">
+
+                                    <div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center">
+                                        🎵
+                                    </div>
+
+                                    <div>
+
+                                        <p className="font-semibold text-gray-900">
+                                            {session.type}
+                                        </p>
+
+                                        <p className="text-sm text-gray-500">
+                                            {new Date(
+                                                session.date
+                                            ).toLocaleDateString("en-IN", {
+                                                day: "2-digit",
+                                                month: "short",
+                                                year: "numeric",
+                                            })}
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700">
+                                    {session.status}
+                                </span>
+
+                            </div>
+
+                        ))
+
+                    ) : (
+
+                        <div className="p-6 rounded-xl bg-gray-50 text-center">
+
+                            <div className="text-3xl mb-2">
+                                🎵
+                            </div>
+
+                            <p className="font-semibold text-gray-900">
+                                No sessions yet
+                            </p>
+
+                            <p className="text-sm text-gray-500 mt-1">
+                                Your sessions will appear here once
+                                the academy records your attendance.
+                            </p>
+
+                        </div>
+
+                    )}
 
                 </div>
 

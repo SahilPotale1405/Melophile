@@ -82,7 +82,7 @@ router.post("/mark-present", async (req, res) => {
     }
 });
 
-        // Get all sessions
+// Get all sessions
 router.get("/", async (req, res) => {
     try {
         const sessions = await Session.find()
@@ -96,6 +96,28 @@ router.get("/", async (req, res) => {
 
         res.status(500).json({
             message: "Failed to fetch sessions",
+        });
+    }
+});
+
+// Get sessions for a specific student
+router.get("/student/:studentId", async (req, res) => {
+    try {
+        const { studentId } = req.params;
+
+        const sessions = await Session.find({
+            student: studentId,
+        })
+            .sort({ date: -1 })
+            .limit(5);
+
+        res.json(sessions);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to fetch student sessions",
         });
     }
 });

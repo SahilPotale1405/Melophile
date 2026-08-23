@@ -13,6 +13,7 @@ import StudentDashboard from "../pages/student/Dashboard";
 import ChangePassword from "../pages/auth/ChangePassword";
 import Sessions from "../pages/admin/sessions";
 
+
 function AppRoutes() {
     return (
         <Routes>
@@ -57,6 +58,10 @@ function AppRoutes() {
                 <Route
                     path="/student/dashboard"
                     element={<StudentDashboard />}
+                />
+                <Route
+                    path="/student/sessions"
+                    element={<StudentSessions />}
                 />
             </Route>
 

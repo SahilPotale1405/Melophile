@@ -19,6 +19,7 @@ function StudentTable({
     const [editingStudent, setEditingStudent] = useState(null);
     const [saving, setSaving] = useState(false);
     const [deactivatingId, setDeactivatingId] = useState(null);
+    const [markingPresentId, setMarkingPresentId] = useState(null);
 
     const filteredStudents = students.filter((student) =>
         student.name.toLowerCase().includes(search.toLowerCase())
@@ -165,6 +166,63 @@ function StudentTable({
         }
     };
 
+    // =========================
+// MARK STUDENT PRESENT
+// =========================
+
+const handleMarkPresent = async (student) => {
+    const confirmed = window.confirm(
+        `Mark ${student.name} as present for today's session?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        setMarkingPresentId(student._id);
+
+        const response = await fetch(
+            "http://localhost:5000/api/sessions/mark-present",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    studentId: student._id,
+                }),
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message);
+            return;
+        }
+
+        // Update sessionsLeft in Students table
+        onStudentUpdated({
+            ...student,
+            sessionsLeft: data.sessionsLeft,
+        });
+
+        alert(
+            `Attendance marked successfully!\n\n` +
+            `Student: ${student.name}\n` +
+            `Sessions Left: ${data.sessionsLeft}`
+        );
+
+    } catch (error) {
+        console.error("Attendance failed:", error);
+        alert("Failed to mark student present");
+
+    } finally {
+        setMarkingPresentId(null);
+    }
+};
+
     return (
         <>
             {/* =========================
@@ -250,6 +308,21 @@ function StudentTable({
                                                         : "Approve"}
                                                 </button>
 
+                                            )}
+
+                                            {/*MARK PRESENT*/}
+
+                                            {student.status === "Active" && student.sessionsLeft > 0 && (
+                                                <button
+                                                    onClick={() => handleMarkPresent(student)}
+                                                    disabled={markingPresentId === student._id}
+                                                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                                                    title="Mark Present"
+                                                >
+                                                    {markingPresentId === student._id
+                                                        ? "Marking..."
+                                                        : "Present"}
+                                                </button>
                                             )}
 
                                             {/* EDIT */}
