@@ -12,7 +12,7 @@ import Register from "../pages/auth/Register";
 import StudentDashboard from "../pages/student/Dashboard";
 import ChangePassword from "../pages/auth/ChangePassword";
 import Sessions from "../pages/admin/sessions";
-
+import StudentSessions from "../pages/student/Sessions";
 
 function AppRoutes() {
     return (
@@ -59,6 +59,7 @@ function AppRoutes() {
                     path="/student/dashboard"
                     element={<StudentDashboard />}
                 />
+                
                 <Route
                     path="/student/sessions"
                     element={<StudentSessions />}

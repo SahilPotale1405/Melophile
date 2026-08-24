@@ -346,4 +346,68 @@ router.get("/:id", async (req, res) => {
         });
     }
 });
+
+router.put("/reset-test-password/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found"
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash("TestPassword123", 10);
+
+        student.password = hashedPassword;
+        student.mustChangePassword = false;
+
+        await student.save();
+
+        res.json({
+            message: "Test password reset successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to reset password"
+        });
+    }
+});
+
+// TEMPORARY: Reset test student password
+router.put("/reset-test-password/:id", async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                message: "Student not found",
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(
+            "TestPassword123",
+            10
+        );
+
+        student.password = hashedPassword;
+        student.mustChangePassword = false;
+
+        await student.save();
+
+        res.json({
+            message: "Test password reset successfully",
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            message: "Failed to reset password",
+        });
+    }
+});
 module.exports= router;

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
     const [student, setStudent] = useState(null);
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     useEffect(() => {
         const studentId = localStorage.getItem("studentId");
@@ -215,7 +217,10 @@ function Dashboard() {
                         </p>
                     </div>
 
-                    <button className="text-sm font-semibold text-purple-600 hover:text-purple-700">
+                    <button 
+                        onClick={()=> navigate("/student/sessions")}
+                        className="text-sm font-semibold text-purple-600 hover:text-purple-700"
+                        >
                         View all →
                     </button>
 
