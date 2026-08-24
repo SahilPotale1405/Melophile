@@ -14,8 +14,8 @@ function Sessions() {
     const fetchData = async () => {
         try {
             const [sessionsResponse, studentsResponse] = await Promise.all([
-                fetch("http://localhost:5000/api/sessions"),
-                fetch("http://localhost:5000/api/students"),
+                fetch("${import.meta.env.VITE_API_URL}/api/sessions"),
+                fetch("${import.meta.env.VITE_API_URL}/api/students"),
             ]);
 
             const sessionsData = await sessionsResponse.json();
@@ -67,7 +67,7 @@ function Sessions() {
             setMarkingId(studentId);
 
             const response = await fetch(
-                "http://localhost:5000/api/sessions/mark-present",
+                "${import.meta.env.VITE_API_URL}/api/sessions/mark-present",
                 {
                     method: "POST",
                     headers: {

@@ -34,7 +34,7 @@ function StudentTable({
             setApprovingId(studentId);
 
             const response = await fetch(
-                `http://localhost:5000/api/students/approve/${studentId}`,
+                `${import.meta.env.VITE_API_URL}/api/students/approve/${studentId}`,
                 {
                     method: "PUT",
                 }
@@ -83,7 +83,7 @@ function StudentTable({
             setSaving(true);
 
             const response = await fetch(
-                `http://localhost:5000/api/students/${editingStudent._id}`,
+                `${import.meta.env.VITE_API_URL}/api/students/${editingStudent._id}`,
                 {
                     method: "PUT",
                     headers: {
@@ -140,7 +140,7 @@ function StudentTable({
             setDeactivatingId(student._id);
 
             const response = await fetch(
-                `http://localhost:5000/api/students/deactivate/${student._id}`,
+                `${import.meta.env.VITE_API_URL}/api/students/deactivate/${student._id}`,
                 {
                     method: "PUT",
                 }
@@ -183,7 +183,7 @@ const handleMarkPresent = async (student) => {
         setMarkingPresentId(student._id);
 
         const response = await fetch(
-            "http://localhost:5000/api/sessions/mark-present",
+            `${import.meta.env.VITE_API_URL}/api/sessions/mark-present`,
             {
                 method: "POST",
                 headers: {
