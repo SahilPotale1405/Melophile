@@ -17,7 +17,7 @@ function Sessions() {
         const fetchSessions = async () => {
             try {
                 const response = await fetch(
-                    `http://localhost:5000/api/sessions/student/${studentId}`
+                    `${import.meta.env.VITE_API_URL}/api/sessions/student/${studentId}`
                 );
 
                 if (!response.ok) {

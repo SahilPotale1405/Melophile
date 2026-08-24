@@ -21,7 +21,7 @@ function Dashboard() {
             try {
                 // Fetch student details
                 const studentResponse = await fetch(
-                    `http://localhost:5000/api/students/${studentId}`
+                    `${import.meta.env.VITE_API_URL}/api/students/${studentId}`
                 );
 
                 if (!studentResponse.ok) {
@@ -32,7 +32,7 @@ function Dashboard() {
 
                 // Fetch student's recent sessions
                 const sessionsResponse = await fetch(
-                    `http://localhost:5000/api/sessions/student/${studentId}`
+                    `${import.meta.env.VITE_API_URL}/api/sessions/student/${studentId}`
                 );
 
                 if (!sessionsResponse.ok) {

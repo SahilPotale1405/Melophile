@@ -29,7 +29,7 @@ function ChangePassword() {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/students/change-password/${studentId}`,
+                `${import.meta.env.VITE_API_URL}/api/students/change-password/${studentId}`,
                 {
                     method: "PUT",
                     headers: {

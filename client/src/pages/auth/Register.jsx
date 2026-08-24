@@ -10,7 +10,7 @@ function Register() {
     const [instrument, setInstrument] = useState("");
 
     useEffect(() => {
-        fetch("http://localhost:5000/api/instruments")
+        fetch(`${import.meta.env.VITE_API_URL}/api/instruments`)
             .then((res) => res.json())
             .then((data) => setInstruments(data))
             .catch((error) => console.log(error));
@@ -19,7 +19,7 @@ function Register() {
     const handleRegister = async () => {
         try {
             const response = await fetch(
-                "http://localhost:5000/api/students/register",
+                `${import.meta.env.VITE_API_URL}/api/students/register`,
                 {
                     method: "POST",
                     headers: {

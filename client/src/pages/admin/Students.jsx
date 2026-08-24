@@ -6,7 +6,7 @@ function Students() {
     const [loading, setLoading] = useState(true);
 
     const fetchStudents = () => {
-        fetch("http://localhost:5000/api/students")
+        fetch(`${import.meta.env.VITE_API_URL}/api/students`)
             .then((res) => res.json())
             .then((data) => {
                 setStudents(data);
