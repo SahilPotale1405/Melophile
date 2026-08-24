@@ -18,7 +18,15 @@ mongoose
     .catch((err) => console.log(err));
 
 app.get("/", (req, res) => {
-    res.send("Melophile Backend Running");
+    res.status(200).send("MELOPHILE BACKEND IS WORKING");
+});
+
+app.get("/test", (req, res) => {
+    res.json({
+        success: true,
+        message: "Render API is working",
+        timestamp: new Date().toISOString()
+    });
 });
 
 app.use("/api/instruments", instrumentRoutes);
