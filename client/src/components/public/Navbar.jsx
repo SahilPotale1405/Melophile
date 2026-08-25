@@ -38,8 +38,15 @@ function Navbar() {
               <a href="#pricing">Pricing</a>
             </li>
 
+            <li><a href="#contact">Contact</a></li>
+
             <li>
-              <a href="#contact">Contact</a>
+              <a
+                href="/admin/login"
+                className="text-purple-400 hover:text-purple-300 transition"
+              >
+                Admin Login
+              </a>
             </li>
           </ul>
 
@@ -82,6 +89,13 @@ function Navbar() {
           <a href="#pricing">Pricing</a>
 
           <a href="#contact">Contact</a>
+
+          <a
+            href="/admin/login"
+            className="text-purple-400 hover:text-purple-300 transition"
+          >
+            Admin Login
+          </a>
 
           {/* Mobile Login */}
           <a
