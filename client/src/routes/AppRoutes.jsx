@@ -13,6 +13,7 @@ import StudentDashboard from "../pages/student/Dashboard";
 import ChangePassword from "../pages/auth/ChangePassword";
 import Sessions from "../pages/admin/sessions";
 import StudentSessions from "../pages/student/Sessions";
+import AdminLogin from "../pages/admin/AdminLogin";
 
 function AppRoutes() {
     return (
@@ -25,11 +26,16 @@ function AppRoutes() {
 
             {/* Login */}
             <Route path="/login" element={<Login />} />
-            
+
             <Route
-                    path="/student/change-password"
-                    element={<ChangePassword />}
-                />
+                path="/admin/login"
+                element={<AdminLogin />}
+            />
+
+            <Route
+                path="/student/change-password"
+                element={<ChangePassword />}
+            />
 
             {/* Admin pages */}
             <Route element={<AdminLayout />}>
@@ -47,10 +53,11 @@ function AppRoutes() {
                     path="/register"
                     element={<Register />}
                 />
-               <Route
+
+                <Route
                     path="/admin/sessions"
-                    element={<Sessions/>}
-               />
+                    element={<Sessions />}
+                />
             </Route>
 
             {/* Student pages */}
@@ -59,7 +66,7 @@ function AppRoutes() {
                     path="/student/dashboard"
                     element={<StudentDashboard />}
                 />
-                
+
                 <Route
                     path="/student/sessions"
                     element={<StudentSessions />}
