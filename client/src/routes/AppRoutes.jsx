@@ -13,7 +13,7 @@ import StudentDashboard from "../pages/student/Dashboard";
 import ChangePassword from "../pages/auth/ChangePassword";
 import Sessions from "../pages/admin/sessions";
 import StudentSessions from "../pages/student/Sessions";
-import AdminLogin from "../pages/admin/AdminLogin";
+import AdminLogin from "../pages/admin/adminLogin";
 
 function AppRoutes() {
     return (
