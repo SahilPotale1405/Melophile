@@ -1,6 +1,12 @@
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 
 function Sidebar() {
+    const navigate = useNavigate();
+
+    const handleLogout = ()=>{
+        localStorage.removeItem("studenId");
+        navigate("/login");
+    };
     return (
         <aside className="w-64 min-h-screen bg-gray-900 text-white p-6">
 
@@ -39,6 +45,7 @@ function Sidebar() {
                 </Link>
 
                 <button
+                onClick={handleLogout}
                     className="w-full text-left p-3 rounded-lg bg-red-600 hover:bg-red-700 mt-8"
                 >
                     Logout

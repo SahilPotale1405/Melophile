@@ -14,6 +14,8 @@ import ChangePassword from "../pages/auth/ChangePassword";
 import Sessions from "../pages/admin/sessions";
 import StudentSessions from "../pages/student/Sessions";
 import AdminLogin from "../pages/admin/adminLogin";
+import ProtectedRoute from "./ProtectedRoute";
+import StudentProtectedRoute from "./StudentProtectedRoute";
 
 function AppRoutes() {
     return (
@@ -28,6 +30,11 @@ function AppRoutes() {
             <Route path="/login" element={<Login />} />
 
             <Route
+                    path="/register"
+                    element={<Register />}
+                />
+
+            <Route
                 path="/admin/login"
                 element={<AdminLogin />}
             />
@@ -37,40 +44,39 @@ function AppRoutes() {
                 element={<ChangePassword />}
             />
 
-            {/* Admin pages */}
-            <Route element={<AdminLayout />}>
-                <Route
-                    path="/admin/dashboard"
-                    element={<Dashboard />}
-                />
+            {/* Protected Admin pages */}
+            <Route element={<ProtectedRoute />}>
+                <Route element={<AdminLayout />}>
+                    <Route
+                        path="/admin/dashboard"
+                        element={<Dashboard />}
+                    />
 
-                <Route
-                    path="/admin/students"
-                    element={<Students />}
-                />
+                    <Route
+                        path="/admin/students"
+                        element={<Students />}
+                    />
 
-                <Route
-                    path="/register"
-                    element={<Register />}
-                />
-
-                <Route
-                    path="/admin/sessions"
-                    element={<Sessions />}
-                />
+                    <Route
+                        path="/admin/sessions"
+                        element={<Sessions />}
+                    />
+                </Route>
             </Route>
 
-            {/* Student pages */}
-            <Route element={<StudentLayout />}>
-                <Route
-                    path="/student/dashboard"
-                    element={<StudentDashboard />}
-                />
+            {/* Protected Student pages */}
+            <Route element={<StudentProtectedRoute />}>
+                <Route element={<StudentLayout />}>
+                    <Route
+                        path="/student/dashboard"
+                        element={<StudentDashboard />}
+                    />
 
-                <Route
-                    path="/student/sessions"
-                    element={<StudentSessions />}
-                />
+                    <Route
+                        path="/student/sessions"
+                        element={<StudentSessions />}
+                    />
+                </Route>
             </Route>
 
         </Routes>
