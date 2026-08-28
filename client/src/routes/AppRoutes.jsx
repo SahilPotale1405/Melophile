@@ -16,7 +16,7 @@ import StudentSessions from "../pages/student/Sessions";
 import AdminLogin from "../pages/admin/adminLogin";
 import ProtectedRoute from "./ProtectedRoute";
 import StudentProtectedRoute from "./StudentProtectedRoute";
-
+import Profile from "../pages/student/Profile";
 function AppRoutes() {
     return (
         <Routes>
@@ -75,6 +75,11 @@ function AppRoutes() {
                     <Route
                         path="/student/sessions"
                         element={<StudentSessions />}
+                    />
+
+                    <Route
+                        path="/student/profile"
+                        element={<Profile/>}
                     />
                 </Route>
             </Route>
