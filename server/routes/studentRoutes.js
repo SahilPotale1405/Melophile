@@ -1,5 +1,5 @@
 const express = require("express");
-const Student = require("../models/Students");
+const Student = require("../models/students");
 const bcrypt = require("bcryptjs");
 
 const router = express.Router();
@@ -111,12 +111,15 @@ router.put("/approve/:id", async (req, res) => {
 // Update student
 router.put("/:id", async (req, res) => {
     try {
+        
+        
         const {
             name,
             email,
             phone,
             instrument,
             fees,
+            feeAmount,
             status,
             sessionsLeft
         } = req.body;
@@ -147,25 +150,32 @@ router.put("/:id", async (req, res) => {
         student.phone = phone;
         student.instrument = instrument;
         student.fees = fees;
+        student.feeAmount = feeAmount;
         student.status = status;
         student.sessionsLeft = sessionsLeft;
 
+        console.log("FEE AMOUNT RECEIVED:", feeAmount);
+        console.log("FEE AMOUNT BEFORE SAVE:", student.feeAmount);
+
         await student.save();
 
+        console.log("FEE AMOUNT AFTER SAVE:", student.feeAmount);
+
         res.json({
-            message: "Student updated successfully",
-            student: {
-                _id: student._id,
-                name: student.name,
-                email: student.email,
-                phone: student.phone,
-                instrument: student.instrument,
-                fees: student.fees,
-                status: student.status,
-                sessionsLeft: student.sessionsLeft,
-                mustChangePassword: student.mustChangePassword
-            }
-        });
+    message: "Student updated successfully",
+    student: {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone,
+        instrument: student.instrument,
+        feeAmount: student.feeAmount,
+        fees: student.fees,
+        status: student.status,
+        sessionsLeft: student.sessionsLeft,
+        mustChangePassword: student.mustChangePassword
+    }
+});
 
     } catch (error) {
         console.error(error);

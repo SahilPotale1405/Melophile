@@ -5,18 +5,22 @@ function Students() {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchStudents = () => {
-        fetch(`${import.meta.env.VITE_API_URL}/api/students`)
-            .then((res) => res.json())
-            .then((data) => {
-                setStudents(data);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error("Failed to fetch students:", error);
-                setLoading(false);
-            });
-    };
+    const fetchStudents = async () => {
+    try {
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/students`
+        );
+
+        const data = await response.json();
+
+        setStudents(data);
+        setLoading(false);
+
+    } catch (error) {
+        console.error("Failed to fetch students:", error);
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         fetchStudents();
@@ -35,19 +39,18 @@ function Students() {
         );
     };
 
-    const handleStudentUpdated = (updatedStudent) => {
-        setStudents((currentStudents) =>
-            currentStudents.map((student) =>
-                student._id === updatedStudent._id
-                    ? {
-                          ...student,
-                          ...updatedStudent,
-                      }
-                    : student
-            )
-        );
-    };
+    const handleStudentUpdated = async (updatedStudent) => {
+    setStudents((currentStudents) =>
+        currentStudents.map((student) =>
+            student._id === updatedStudent._id
+                ? updatedStudent
+                : student
+        )
+    );
 
+    // Get the latest data from MongoDB
+    await fetchStudents();
+};
     if (loading) {
         return <p>Loading students...</p>;
     }

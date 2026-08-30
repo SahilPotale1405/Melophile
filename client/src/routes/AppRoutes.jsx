@@ -17,6 +17,8 @@ import AdminLogin from "../pages/admin/adminLogin";
 import ProtectedRoute from "./ProtectedRoute";
 import StudentProtectedRoute from "./StudentProtectedRoute";
 import Profile from "../pages/student/Profile";
+import Fees from "../pages/admin/Fees";
+
 function AppRoutes() {
     return (
         <Routes>
@@ -61,6 +63,10 @@ function AppRoutes() {
                         path="/admin/sessions"
                         element={<Sessions />}
                     />
+                <Route
+                    path="/admin/fees"
+                    element={<Fees/>}
+                />
                 </Route>
             </Route>
 

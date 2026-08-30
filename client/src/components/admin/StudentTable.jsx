@@ -3,10 +3,11 @@ import { useState } from "react";
 const columns = [
     { key: "id", label: "ID" },
     { key: "name", label: "Name" },
+    {key:"feeAmount",label:"Fee Amount"},
     { key: "fees", label: "Fees" },
     { key: "status", label: "Status" },
     { key: "sessionsLeft", label: "Sessions Left" },
-    { key: "actions", label: "Actions" }
+    { key: "actions", label: "Actions" },
 ];
 
 function StudentTable({
@@ -95,6 +96,7 @@ function StudentTable({
                         phone: editingStudent.phone,
                         instrument: editingStudent.instrument,
                         fees: editingStudent.fees,
+                        feeAmount:editingStudent.feeAmount,
                         status: editingStudent.status,
                         sessionsLeft: editingStudent.sessionsLeft,
                     }),
@@ -108,11 +110,14 @@ function StudentTable({
                 return;
             }
 
+            console.log("SERVER UPDATED STUDENT:",data.student);
             onStudentUpdated(data.student);
 
             setEditingStudent(null);
 
-            alert("Student updated successfully!");
+            alert(
+    `Student updated successfully!\nFee Amount: ₹${data.student.feeAmount}`
+);
 
         } catch (error) {
             console.error("Update failed:", error);
@@ -361,6 +366,12 @@ const handleMarkPresent = async (student) => {
                                             </button>
 
                                         </div>
+                                        /* Fee Amount*/
+                                    ) : column.key === "feeAmount" ? (
+
+                                        <span className="font-semibold text-gray-800">
+                                            ₹{Number(student.feeAmount || 0).toLocaleString("en-IN")}
+                                        </span>
 
                                     ) : column.key === "fees" ? (
 
@@ -377,7 +388,6 @@ const handleMarkPresent = async (student) => {
                                         </span>
 
                                     ) : column.key === "status" ? (
-
                                         /* STATUS */
 
                                         <span
@@ -549,6 +559,30 @@ const handleMarkPresent = async (student) => {
 
                                 </select>
 
+                            </div>
+
+                            {/* FEE AMOUNT */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Fee Amount
+                                </label>
+
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={editingStudent.feeAmount ?? ""}
+                                    onChange={(e) =>
+                                        setEditingStudent({
+                                            ...editingStudent,
+                                            feeAmount:
+                                                e.target.value === ""
+                                                    ? ""
+                                                    : Number(e.target.value)
+                                        })
+                                    }
+                                    placeholder="Enter fee amount"
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                />
                             </div>
 
                             {/* STATUS */}

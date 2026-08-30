@@ -36,6 +36,11 @@ const studentSchema = new mongoose.Schema(
             enum: ["Paid", "Pending"],
             default: "Pending",
         },
+        feeAmount:{
+            type: Number,
+            default:0,
+            min:0,
+        },
 
         status: {
             type: String,
@@ -58,4 +63,6 @@ const studentSchema = new mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model("Student", studentSchema);
+module.exports =
+    mongoose.models.Student ||
+    mongoose.model("Student", studentSchema);
