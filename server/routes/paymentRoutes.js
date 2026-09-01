@@ -145,6 +145,7 @@ router.post("/verify", async (req, res) => {
         const payment = new Payment({
             student: studentId,
             amount: Number(amount),
+            
             paymentDate: new Date(),
             paymentMethod: "UPI",
             status: "Paid",
@@ -205,6 +206,7 @@ router.post("/", async (req, res) => {
         const {
             studentId,
             amount,
+            feeMonth,
             paymentDate,
             paymentMethod,
             status,
@@ -224,6 +226,12 @@ router.post("/", async (req, res) => {
             });
         }
 
+        if (!feeMonth) {
+            return res.status(400).json({
+                message: "Fee month is required",
+            });
+        }
+
         const student = await Student.findById(studentId);
 
         if (!student) {
@@ -235,6 +243,7 @@ router.post("/", async (req, res) => {
         const payment = new Payment({
             student: studentId,
             amount,
+            feeMonth: new Date(`${feeMonth}-01`),
             paymentDate: paymentDate || Date.now(),
             paymentMethod: paymentMethod || "Cash",
             status: status || "Paid",

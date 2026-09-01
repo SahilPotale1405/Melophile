@@ -14,6 +14,11 @@ const paymentSchema = new mongoose.Schema(
             min: 0,
         },
 
+        feeMonth: {
+            type: Date,
+            required: true,
+        },
+
         paymentDate: {
             type: Date,
             default: Date.now,
