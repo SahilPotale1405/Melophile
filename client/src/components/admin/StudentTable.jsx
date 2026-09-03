@@ -3,7 +3,7 @@ import { useState } from "react";
 const columns = [
     { key: "id", label: "ID" },
     { key: "name", label: "Name" },
-    {key:"feeAmount",label:"Fee Amount"},
+    { key: "feeAmount", label: "Fee Amount" },
     { key: "fees", label: "Fees" },
     { key: "status", label: "Status" },
     { key: "sessionsLeft", label: "Sessions Left" },
@@ -17,6 +17,14 @@ function StudentTable({
 }) {
     const [search, setSearch] = useState("");
     const [approvingId, setApprovingId] = useState(null);
+
+    const [approvalStudent, setApprovalStudent] = useState(null);
+
+    const [approvalForm, setApprovalForm] = useState({
+        feeAmount: "",
+        sessionsLeft: "",
+    });
+
     const [editingStudent, setEditingStudent] = useState(null);
     const [saving, setSaving] = useState(false);
     const [deactivatingId, setDeactivatingId] = useState(null);
@@ -30,36 +38,70 @@ function StudentTable({
     // APPROVE STUDENT
     // =========================
 
-    const handleApprove = async (studentId) => {
+    const handleApprove = (student) => {
+        setApprovalStudent(student);
+
+        setApprovalForm({
+            feeAmount: student.feeAmount || "",
+            sessionsLeft: student.sessionsLeft || "",
+        });
+    };
+
+    const confirmApproval = async () => {
         try {
-            setApprovingId(studentId);
+            if (
+                !approvalForm.feeAmount ||
+                Number(approvalForm.feeAmount) <= 0
+            ) {
+                alert("Please enter a valid fee amount");
+                return;
+            }
+
+            if (
+                approvalForm.sessionsLeft === "" ||
+                Number(approvalForm.sessionsLeft) < 0
+            ) {
+                alert("Please enter a valid number of sessions");
+                return;
+            }
+
+            setApprovingId(approvalStudent._id);
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/students/approve/${studentId}`,
+                `${import.meta.env.VITE_API_URL}/api/students/approve/${approvalStudent._id}`,
                 {
                     method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        feeAmount: Number(approvalForm.feeAmount),
+                        sessionsLeft: Number(approvalForm.sessionsLeft),
+                    }),
                 }
             );
 
             const data = await response.json();
 
             if (!response.ok) {
-                alert(data.message);
+                alert(data.message || "Failed to approve student");
                 return;
             }
 
             onStudentApproved(data.student);
 
+            setApprovalStudent(null);
+
             alert(
                 `Student approved successfully!\n\n` +
                 `Email: ${data.student.email}\n` +
+                `Fee Amount: ₹${data.student.feeAmount}\n` +
+                `Sessions: ${data.student.sessionsLeft}\n` +
                 `Temporary Password: ${data.temporaryPassword}`
             );
-
         } catch (error) {
             console.error("Approval failed:", error);
             alert("Failed to approve student");
-
         } finally {
             setApprovingId(null);
         }
@@ -96,7 +138,7 @@ function StudentTable({
                         phone: editingStudent.phone,
                         instrument: editingStudent.instrument,
                         fees: editingStudent.fees,
-                        feeAmount:editingStudent.feeAmount,
+                        feeAmount: editingStudent.feeAmount,
                         status: editingStudent.status,
                         sessionsLeft: editingStudent.sessionsLeft,
                     }),
@@ -110,19 +152,18 @@ function StudentTable({
                 return;
             }
 
-            console.log("SERVER UPDATED STUDENT:",data.student);
+            console.log("SERVER UPDATED STUDENT:", data.student);
+
             onStudentUpdated(data.student);
 
             setEditingStudent(null);
 
             alert(
-    `Student updated successfully!\nFee Amount: ₹${data.student.feeAmount}`
-);
-
+                `Student updated successfully!\nFee Amount: ₹${data.student.feeAmount}`
+            );
         } catch (error) {
             console.error("Update failed:", error);
             alert("Failed to update student");
-
         } finally {
             setSaving(false);
         }
@@ -161,72 +202,68 @@ function StudentTable({
             onStudentUpdated(data.student);
 
             alert("Student deactivated successfully!");
-
         } catch (error) {
             console.error("Deactivation failed:", error);
             alert("Failed to deactivate student");
-
         } finally {
             setDeactivatingId(null);
         }
     };
 
     // =========================
-// MARK STUDENT PRESENT
-// =========================
+    // MARK STUDENT PRESENT
+    // =========================
 
-const handleMarkPresent = async (student) => {
-    const confirmed = window.confirm(
-        `Mark ${student.name} as present for today's session?`
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    try {
-        setMarkingPresentId(student._id);
-
-        const response = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/sessions/mark-present`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    studentId: student._id,
-                }),
-            }
+    const handleMarkPresent = async (student) => {
+        const confirmed = window.confirm(
+            `Mark ${student.name} as present for today's session?`
         );
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.message);
+        if (!confirmed) {
             return;
         }
 
-        // Update sessionsLeft in Students table
-        onStudentUpdated({
-            ...student,
-            sessionsLeft: data.sessionsLeft,
-        });
+        try {
+            setMarkingPresentId(student._id);
 
-        alert(
-            `Attendance marked successfully!\n\n` +
-            `Student: ${student.name}\n` +
-            `Sessions Left: ${data.sessionsLeft}`
-        );
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/sessions/mark-present`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        studentId: student._id,
+                    }),
+                }
+            );
 
-    } catch (error) {
-        console.error("Attendance failed:", error);
-        alert("Failed to mark student present");
+            const data = await response.json();
 
-    } finally {
-        setMarkingPresentId(null);
-    }
-};
+            if (!response.ok) {
+                alert(data.message);
+                return;
+            }
+
+            // Update sessionsLeft in Students table
+            onStudentUpdated({
+                ...student,
+                sessionsLeft: data.sessionsLeft,
+            });
+
+            alert(
+                `Attendance marked successfully!\n\n` +
+                `Student: ${student.name}\n` +
+                `Sessions Left: ${data.sessionsLeft}`
+            );
+        } catch (error) {
+            console.error("Attendance failed:", error);
+            alert("Failed to mark student present");
+        } finally {
+            setMarkingPresentId(null);
+        }
+    };
 
     return (
         <>
@@ -297,9 +334,7 @@ const handleMarkPresent = async (student) => {
 
                                                 <button
                                                     onClick={() =>
-                                                        handleApprove(
-                                                            student._id
-                                                        )
+                                                        handleApprove(student)
                                                     }
                                                     disabled={
                                                         approvingId ===
@@ -315,20 +350,29 @@ const handleMarkPresent = async (student) => {
 
                                             )}
 
-                                            {/*MARK PRESENT*/}
+                                            {/* MARK PRESENT */}
 
-                                            {student.status === "Active" && student.sessionsLeft > 0 && (
-                                                <button
-                                                    onClick={() => handleMarkPresent(student)}
-                                                    disabled={markingPresentId === student._id}
-                                                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
-                                                    title="Mark Present"
-                                                >
-                                                    {markingPresentId === student._id
-                                                        ? "Marking..."
-                                                        : "Present"}
-                                                </button>
-                                            )}
+                                            {student.status === "Active" &&
+                                                student.sessionsLeft > 0 && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleMarkPresent(
+                                                                student
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            markingPresentId ===
+                                                            student._id
+                                                        }
+                                                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                                                        title="Mark Present"
+                                                    >
+                                                        {markingPresentId ===
+                                                        student._id
+                                                            ? "Marking..."
+                                                            : "Present"}
+                                                    </button>
+                                                )}
 
                                             {/* EDIT */}
 
@@ -366,11 +410,16 @@ const handleMarkPresent = async (student) => {
                                             </button>
 
                                         </div>
-                                        /* Fee Amount*/
+
                                     ) : column.key === "feeAmount" ? (
 
+                                        /* FEE AMOUNT */
+
                                         <span className="font-semibold text-gray-800">
-                                            ₹{Number(student.feeAmount || 0).toLocaleString("en-IN")}
+                                            ₹
+                                            {Number(
+                                                student.feeAmount || 0
+                                            ).toLocaleString("en-IN")}
                                         </span>
 
                                     ) : column.key === "fees" ? (
@@ -388,6 +437,7 @@ const handleMarkPresent = async (student) => {
                                         </span>
 
                                     ) : column.key === "status" ? (
+
                                         /* STATUS */
 
                                         <span
@@ -549,6 +599,7 @@ const handleMarkPresent = async (student) => {
                                     }
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500"
                                 >
+
                                     <option value="Paid">
                                         Paid
                                     </option>
@@ -562,7 +613,9 @@ const handleMarkPresent = async (student) => {
                             </div>
 
                             {/* FEE AMOUNT */}
+
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Fee Amount
                                 </label>
@@ -583,6 +636,7 @@ const handleMarkPresent = async (student) => {
                                     placeholder="Enter fee amount"
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                                 />
+
                             </div>
 
                             {/* STATUS */}
@@ -603,6 +657,7 @@ const handleMarkPresent = async (student) => {
                                     }
                                     className="w-full border border-gray-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500"
                                 >
+
                                     <option value="Active">
                                         Active
                                     </option>
@@ -681,8 +736,155 @@ const handleMarkPresent = async (student) => {
                 </div>
 
             )}
+            {/* =========================
+    APPROVE STUDENT MODAL
+========================= */}
+
+{approvalStudent && (
+
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+
+            {/* HEADER */}
+
+            <div className="flex items-center justify-between mb-6">
+
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                        Approve Student
+                    </h2>
+
+                    <p className="text-sm text-gray-500 mt-1">
+                        Set fees and sessions for this student
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => setApprovalStudent(null)}
+                    disabled={approvingId === approvalStudent._id}
+                    className="text-gray-500 hover:text-gray-900 text-2xl disabled:opacity-40"
+                >
+                    ×
+                </button>
+
+            </div>
+
+            {/* STUDENT INFO */}
+
+            <div className="bg-purple-50 rounded-xl p-4 mb-6">
+
+                <p className="text-sm text-gray-500">
+                    Student
+                </p>
+
+                <p className="text-lg font-semibold text-gray-900">
+                    {approvalStudent.name}
+                </p>
+
+                <p className="text-sm text-gray-600">
+                    {approvalStudent.email}
+                </p>
+
+            </div>
+
+            {/* FORM */}
+
+            <div className="space-y-5">
+
+                {/* FEE AMOUNT */}
+
+                <div>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Fee Amount
+                    </label>
+
+                    <div className="relative">
+
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                            ₹
+                        </span>
+
+                        <input
+                            type="number"
+                            min="1"
+                            value={approvalForm.feeAmount}
+                            onChange={(e) =>
+                                setApprovalForm({
+                                    ...approvalForm,
+                                    feeAmount: e.target.value
+                                })
+                            }
+                            placeholder="Enter fee amount"
+                            disabled={approvingId === approvalStudent._id}
+                            className="w-full border border-gray-300 rounded-lg pl-9 pr-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                        />
+
+                    </div>
+
+                </div>
+
+                {/* SESSIONS */}
+
+                <div>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Number of Sessions
+                    </label>
+
+                    <input
+                        type="number"
+                        min="0"
+                        value={approvalForm.sessionsLeft}
+                        onChange={(e) =>
+                            setApprovalForm({
+                                ...approvalForm,
+                                sessionsLeft: e.target.value
+                            })
+                        }
+                        placeholder="Enter number of sessions"
+                        disabled={approvingId === approvalStudent._id}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                    />
+
+                </div>
+
+            </div>
+
+            {/* BUTTONS */}
+
+            <div className="flex justify-end gap-3 mt-8">
+
+                <button
+                    onClick={() => setApprovalStudent(null)}
+                    disabled={approvingId === approvalStudent._id}
+                    className="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    onClick={confirmApproval}
+                    disabled={approvingId === approvalStudent._id}
+                    className="px-5 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold"
+                >
+                    {approvingId === approvalStudent._id
+                        ? "Approving..."
+                        : "Approve Student"}
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+)}
 
         </>
+
+        
     );
 }
 

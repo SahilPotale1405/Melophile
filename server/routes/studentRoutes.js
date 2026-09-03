@@ -57,8 +57,28 @@ router.post("/register", async (req, res) => {
 });
 
 // Approve student
+// Approve student
 router.put("/approve/:id", async (req, res) => {
     try {
+        const { feeAmount, sessionsLeft } = req.body;
+
+        // Validate fee amount
+        if (!feeAmount || Number(feeAmount) <= 0) {
+            return res.status(400).json({
+                message: "Please provide a valid fee amount"
+            });
+        }
+
+        // Validate sessions
+        if (
+            sessionsLeft === undefined ||
+            Number(sessionsLeft) < 0
+        ) {
+            return res.status(400).json({
+                message: "Please provide a valid number of sessions"
+            });
+        }
+
         const student = await Student.findById(req.params.id);
 
         if (!student) {
@@ -73,34 +93,47 @@ router.put("/approve/:id", async (req, res) => {
             });
         }
 
+        // Generate temporary password
         const temporaryPassword =
             "Mlp@" + Math.floor(1000 + Math.random() * 9000);
 
+        // Hash password
         const hashedPassword = await bcrypt.hash(
             temporaryPassword,
             10
         );
 
+        // Update student
         student.password = hashedPassword;
         student.status = "Active";
         student.mustChangePassword = true;
+
+        student.feeAmount = Number(feeAmount);
+        student.sessionsLeft = Number(sessionsLeft);
 
         await student.save();
 
         res.json({
             message: "Student approved successfully",
+
             student: {
                 _id: student._id,
                 name: student.name,
                 email: student.email,
+                phone: student.phone,
+                instrument: student.instrument,
+                fees: student.fees,
+                feeAmount: student.feeAmount,
                 status: student.status,
+                sessionsLeft: student.sessionsLeft,
                 mustChangePassword: student.mustChangePassword
             },
+
             temporaryPassword
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Approval error:", error);
 
         res.status(500).json({
             message: "Failed to approve student"

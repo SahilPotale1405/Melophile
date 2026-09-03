@@ -18,6 +18,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import StudentProtectedRoute from "./StudentProtectedRoute";
 import Profile from "../pages/student/Profile";
 import Fees from "../pages/admin/Fees";
+import StudentFees from "../pages/student/StudentFees";
 
 function AppRoutes() {
     return (
@@ -86,6 +87,11 @@ function AppRoutes() {
                     <Route
                         path="/student/profile"
                         element={<Profile/>}
+                    />
+                    
+                    <Route
+                    path="/student/fees"
+                    element={<StudentFees/>}
                     />
                 </Route>
             </Route>
