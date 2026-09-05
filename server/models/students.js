@@ -48,9 +48,27 @@ const studentSchema = new mongoose.Schema(
             default: "Pending",
         },
 
-        sessionsLeft: {
+        planTotalMinutes: {
+            type: Number,
+            default: 1800, // 30 hours
+            min: 0,
+        },
+
+        planUsedMinutes: {
             type: Number,
             default: 0,
+            min: 0,
+        },
+
+        planStartDate: {
+            type: Date,
+            default: null,
+        },
+
+        planStatus: {
+            type: String,
+            enum: ["Active", "Expired"],
+            default: "Active",
         },
 
         mustChangePassword: {

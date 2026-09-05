@@ -27,7 +27,7 @@ const paymentSchema = new mongoose.Schema(
 
         paymentMethod: {
             type: String,
-            enum: ["Cash", "UPI", "Bank Transfer", "Other"],
+            enum: ["Cash", "UPI", "Bank Transfer", "Other","Online"],
             default: "Cash",
         },
 

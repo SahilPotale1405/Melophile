@@ -5,30 +5,33 @@ function Sessions() {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [markingId, setMarkingId] = useState(null);
+    const [actionId, setActionId] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     // =========================
     // FETCH DATA
     // =========================
 
     const fetchData = async () => {
-    try {
-        console.log("API URL:", import.meta.env.VITE_API_URL);
-
-        const [sessionsResponse, studentsResponse] = await Promise.all([
-            fetch(`${import.meta.env.VITE_API_URL}/api/sessions`),
-            fetch(`${import.meta.env.VITE_API_URL}/api/students`),
-        ]);
+        try {
+            const [sessionsResponse, studentsResponse] =
+                await Promise.all([
+                    fetch(
+                        `${import.meta.env.VITE_API_URL}/api/sessions`
+                    ),
+                    fetch(
+                        `${import.meta.env.VITE_API_URL}/api/students`
+                    ),
+                ]);
 
             const sessionsData = await sessionsResponse.json();
             const studentsData = await studentsResponse.json();
 
             setSessions(sessionsData);
             setStudents(studentsData);
-            setLoading(false);
-
         } catch (error) {
-            console.error("Failed to fetch data:", error);
+            console.error("Failed to fetch session data:", error);
+        } finally {
             setLoading(false);
         }
     };
@@ -36,40 +39,109 @@ function Sessions() {
     useEffect(() => {
         fetchData();
     }, []);
+    useEffect(() => {
+    fetchData();
+}, []);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, []);
 
     // =========================
-    // CHECK TODAY'S ATTENDANCE
+    // FORMAT MINUTES
     // =========================
 
-    const isPresentToday = (studentId) => {
-        const today = new Date();
+    const formatMinutes = (minutes = 0) => {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
 
-        return sessions.some((session) => {
-            if (!session.student?._id) {
-                return false;
-            }
-
-            const sessionDate = new Date(session.date);
-
-            return (
-                session.student._id === studentId &&
-                sessionDate.getDate() === today.getDate() &&
-                sessionDate.getMonth() === today.getMonth() &&
-                sessionDate.getFullYear() === today.getFullYear()
-            );
-        });
+        return `${hours}h ${remainingMinutes
+            .toString()
+            .padStart(2, "0")}m`;
     };
 
     // =========================
-    // MARK STUDENT PRESENT
+    // GET REMAINING MINUTES
     // =========================
 
-    const handleMarkPresent = async (studentId) => {
+    const getRemainingMinutes = (student) => {
+    return Math.max(
+        0,
+        (student.planTotalMinutes || 0) -
+            (student.planUsedMinutes || 0)
+    );
+};
+
+const getLiveElapsedSeconds = (session) => {
+    if (!session?.checkIn) {
+        return 0;
+    }
+
+    const checkInTime = new Date(session.checkIn).getTime();
+    const now = currentTime.getTime();
+
+    return Math.max(0, Math.floor((now - checkInTime) / 1000));
+};
+
+const formatSeconds = (seconds = 0) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${hours.toString().padStart(2, "0")}h ${minutes
+        .toString()
+        .padStart(2, "0")}m ${remainingSeconds
+        .toString()
+        .padStart(2, "0")}s`;
+};
+
+const getLiveRemainingSeconds = (student, activeSession) => {
+    const totalSeconds = (student.planTotalMinutes || 0) * 60;
+    const usedSeconds = (student.planUsedMinutes || 0) * 60;
+
+    const storedRemainingSeconds = Math.max(
+        0,
+        totalSeconds - usedSeconds
+    );
+
+    if (!activeSession) {
+        return storedRemainingSeconds;
+    }
+
+    const elapsedSeconds = getLiveElapsedSeconds(activeSession);
+
+    return Math.max(
+        0,
+        storedRemainingSeconds - elapsedSeconds
+    );
+};
+
+    // =========================
+    // CHECK ACTIVE SESSION
+    // =========================
+
+    const getActiveSession = (studentId) => {
+        return sessions.find(
+            (session) =>
+                session.student?._id === studentId &&
+                session.status === "Active"
+        );
+    };
+
+    // =========================
+    // CHECK IN
+    // =========================
+
+    const handleCheckIn = async (studentId) => {
         try {
-            setMarkingId(studentId);
+            setActionId(studentId);
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/sessions/mark-present`,
+                `${import.meta.env.VITE_API_URL}/api/sessions/check-in`,
                 {
                     method: "POST",
                     headers: {
@@ -84,28 +156,116 @@ function Sessions() {
             const data = await response.json();
 
             if (!response.ok) {
-                alert(data.message);
+                alert(data.message || "Check-in failed.");
                 return;
             }
 
             alert(
-                `Attendance marked successfully!\n\nSessions remaining: ${data.sessionsLeft}`
+                `Student checked in successfully!\n\nRemaining plan time: ${formatMinutes(
+                    data.remainingMinutes
+                )}`
             );
 
-            // Refresh students and sessions
             await fetchData();
-
         } catch (error) {
-            console.error("Failed to mark attendance:", error);
-            alert("Failed to mark attendance");
-
+            console.error("Check-in error:", error);
+            alert("Failed to check in student.");
         } finally {
-            setMarkingId(null);
+            setActionId(null);
         }
     };
 
     // =========================
-    // SEARCH STUDENTS
+    // CHECK OUT
+    // =========================
+
+    const handleCheckOut = async (studentId) => {
+        try {
+            setActionId(studentId);
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_URL}/api/sessions/check-out`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        studentId,
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || "Check-out failed.");
+                return;
+            }
+
+            alert(
+                `Student checked out successfully!\n\nSession duration: ${formatMinutes(
+                    data.session.durationMinutes
+                )}\nRemaining plan time: ${formatMinutes(
+                    data.remainingMinutes
+                )}`
+            );
+
+            await fetchData();
+        } catch (error) {
+            console.error("Check-out error:", error);
+            alert("Failed to check out student.");
+        } finally {
+            setActionId(null);
+        }
+    };
+// =========================
+// RENEW STUDENT PLAN
+// =========================
+
+const handleRenewPlan = async (studentId) => {
+    try {
+        setActionId(studentId);
+
+        const response = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/sessions/renew-plan`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    studentId,
+                }),
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || "Plan renewal failed.");
+            return;
+        }
+
+        alert(
+            `Student plan renewed successfully!\n\nNew plan: ${formatMinutes(
+                data.planTotalMinutes
+            )}\nRemaining time: ${formatMinutes(
+                data.remainingMinutes
+            )}`
+        );
+
+        await fetchData();
+    } catch (error) {
+        console.error("Plan renewal error:", error);
+        alert("Failed to renew student plan.");
+    } finally {
+        setActionId(null);
+    }
+};
+
+    // =========================
+    // SEARCH
     // =========================
 
     const filteredStudents = students.filter((student) =>
@@ -115,7 +275,7 @@ function Sessions() {
     );
 
     // =========================
-    // FILTER SESSION HISTORY
+    // FILTER HISTORY
     // =========================
 
     const filteredSessions = sessions.filter((session) =>
@@ -125,7 +285,11 @@ function Sessions() {
     );
 
     if (loading) {
-        return <p>Loading sessions...</p>;
+        return (
+            <div className="p-6">
+                <p>Loading sessions...</p>
+            </div>
+        );
     }
 
     return (
@@ -143,13 +307,14 @@ function Sessions() {
                     </h1>
 
                     <p className="text-gray-500 mt-1">
-                        Track student attendance and practice sessions
+                        Manage student check-in, check-out and
+                        30-hour practice plans.
                     </p>
                 </div>
 
                 <div className="bg-purple-100 text-purple-700 px-5 py-3 rounded-xl shadow-sm">
                     <p className="text-sm">
-                        Total Sessions
+                        Total Visits
                     </p>
 
                     <p className="text-2xl font-bold">
@@ -161,7 +326,7 @@ function Sessions() {
 
 
             {/* =========================
-                TODAY'S ATTENDANCE
+                STUDENT PLAN & CHECK-IN
             ========================= */}
 
             <div>
@@ -169,11 +334,12 @@ function Sessions() {
                 <div className="mb-4">
 
                     <h2 className="text-2xl font-bold">
-                        Today's Attendance
+                        Student Practice Plans
                     </h2>
 
                     <p className="text-gray-500 mt-1">
-                        Mark students present for today's practice session.
+                        Manage 30-hour student plans and
+                        academy entry.
                     </p>
 
                 </div>
@@ -185,178 +351,264 @@ function Sessions() {
                     type="text"
                     placeholder="🔍 Search Student..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) =>
+                        setSearch(e.target.value)
+                    }
                     className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-72 mb-6 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
 
 
-                {/* ATTENDANCE TABLE */}
+                {/* TABLE */}
 
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
+
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[850px]">
 
-                        <thead>
+                        <table className="w-full min-w-[1100px]">
 
-                            <tr>
+                            <thead>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Student
-                                </th>
+                                <tr>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Fees
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Student
+                                    </th>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Sessions Left
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Plan
+                                    </th>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Status
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Used
+                                    </th>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Action
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Remaining
+                                    </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Live Time
+                                    </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Plan Status
+                                    </th>
 
-                            </tr>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Action
+                                    </th>
 
-                        </thead>
+                                </tr>
 
-                        <tbody>
+                            </thead>
 
-                            {filteredStudents.map((student) => {
+                            <tbody>
 
-                                const alreadyPresent = isPresentToday(
-                                    student._id
-                                );
+                                {filteredStudents.map((student) => {
 
-                                return (
-                                    <tr
-                                        key={student._id}
-                                        className="odd:bg-white even:bg-gray-50 hover:bg-purple-50 transition"
-                                    >
+                                    const remainingMinutes =
+                                        getRemainingMinutes(student);
 
-                                        {/* STUDENT */}
+                                    const activeSession =
+                                        getActiveSession(
+                                            student._id
+                                        );
+                                    const liveElapsedSeconds = activeSession
+                                        ? getLiveElapsedSeconds(activeSession)
+                                        : 0;
 
-                                        <td className="px-6 py-4 border-b">
+                                    const liveRemainingSeconds = getLiveRemainingSeconds(
+                                        student,
+                                        activeSession
+                                    );
 
-                                            <div className="font-medium">
-                                                {student.name}
-                                            </div>
+                                    return (
+                                        <tr
+                                            key={student._id}
+                                            className="odd:bg-white even:bg-gray-50 hover:bg-purple-50 transition"
+                                        >
 
-                                            <div className="text-sm text-gray-500">
-                                                {student.email}
-                                            </div>
+                                            {/* STUDENT */}
 
-                                        </td>
+                                            <td className="px-6 py-4 border-b">
 
+                                                <div className="font-medium">
+                                                    {student.name}
+                                                </div>
 
-                                        {/* FEES */}
+                                                <div className="text-sm text-gray-500">
+                                                    {student.email}
+                                                </div>
 
-                                        <td className="px-6 py-4 border-b">
-
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                                    student.fees === "Paid"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-red-100 text-red-700"
-                                                }`}
-                                            >
-                                                {student.fees}
-                                            </span>
-
-                                        </td>
-
-
-                                        {/* SESSIONS */}
-
-                                        <td className="px-6 py-4 border-b">
-
-                                            <span className="font-semibold">
-                                                {student.sessionsLeft}
-                                            </span>
-
-                                        </td>
+                                            </td>
 
 
-                                        {/* STATUS */}
+                                            {/* PLAN */}
 
-                                        <td className="px-6 py-4 border-b">
+                                            <td className="px-6 py-4 border-b">
 
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                                                    student.status === "Active"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : student.status === "Pending"
-                                                        ? "bg-yellow-100 text-yellow-700"
-                                                        : "bg-gray-100 text-gray-700"
-                                                }`}
-                                            >
-                                                {student.status}
-                                            </span>
-
-                                        </td>
-
-
-                                        {/* ACTION */}
-
-                                        <td className="px-6 py-4 border-b">
-
-                                            {alreadyPresent ? (
-
-                                                <span className="px-3 py-2 rounded-lg bg-green-100 text-green-700 text-sm font-semibold">
-                                                    ✓ Present Today
+                                                <span className="font-semibold">
+                                                    {formatMinutes(
+                                                        student.planTotalMinutes
+                                                    )}
                                                 </span>
 
-                                            ) : student.sessionsLeft <= 0 ? (
+                                            </td>
 
-                                                <span className="px-3 py-2 rounded-lg bg-red-100 text-red-700 text-sm font-semibold">
-                                                    No Sessions
+
+                                            {/* USED */}
+
+                                            <td className="px-6 py-4 border-b">
+
+                                                <span className="font-semibold">
+                                                    {formatMinutes(
+                                                        student.planUsedMinutes
+                                                    )}
                                                 </span>
 
-                                            ) : student.status !== "Active" ? (
+                                            </td>
 
-                                                <span className="px-3 py-2 rounded-lg bg-gray-100 text-gray-500 text-sm font-semibold">
-                                                    Not Active
-                                                </span>
 
-                                            ) : (
+                                            {/* REMAINING */}
 
-                                                <button
-                                                    onClick={() =>
-                                                        handleMarkPresent(
-                                                            student._id
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        markingId ===
-                                                        student._id
-                                                    }
-                                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                                            <td className="px-6 py-4 border-b">
+
+                                                <span
+                                                    className={`font-bold ${
+                                                        remainingMinutes <= 0
+                                                            ? "text-red-600"
+                                                            : "text-green-600"
+                                                    }`}
                                                 >
-                                                    {markingId === student._id
-                                                        ? "Marking..."
-                                                        : "Mark Present"}
-                                                </button>
+                                                    {activeSession
+                                                        ? formatSeconds(liveRemainingSeconds)
+                                                        : formatMinutes(remainingMinutes)}
+                                                </span>
 
-                                            )}
+                                            </td>
 
-                                        </td>
+                                            <td className="px-6 py-4 border-b">
+                                                {activeSession ? (
+                                                    <span className="font-bold text-blue-600">
+                                                        {formatSeconds(liveElapsedSeconds)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400">
+                                                        —
+                                                    </span>
+                                                )}
+                                            </td>
 
-                                    </tr>
-                                );
-                            })}
 
-                        </tbody>
+                                            {/* PLAN STATUS */}
 
-                    </table>
+                                            <td className="px-6 py-4 border-b">
+
+                                                {activeSession ? (
+
+                                                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">
+                                                        Checked In
+                                                    </span>
+
+                                                ) : remainingMinutes <= 0 ? (
+
+                                                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700">
+                                                        Expired
+                                                    </span>
+
+                                                ) : (
+
+                                                    <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700">
+                                                        Active
+                                                    </span>
+
+                                                )}
+
+                                            </td>
+
+
+                                            {/* ACTION */}
+
+                                            <td className="px-6 py-4 border-b">
+
+                                                {activeSession ? (
+
+                                                    <button
+                                                        onClick={() =>
+                                                            handleCheckOut(
+                                                                student._id
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            actionId ===
+                                                            student._id
+                                                        }
+                                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                                                    >
+                                                        {actionId ===
+                                                        student._id
+                                                            ? "Processing..."
+                                                            : "Check Out"}
+                                                    </button>
+
+                                                ) : remainingMinutes <= 0 ? (
+
+                                                    <button
+                                                        onClick={() =>
+                                                            handleRenewPlan(student._id)
+                                                        }
+                                                        disabled={
+                                                            actionId === student._id
+                                                        }
+                                                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                                                    >
+                                                        {actionId === student._id
+                                                            ? "Renewing..."
+                                                            : "Renew Plan"}
+                                                    </button>
+
+                                                ) : student.status !==
+                                                  "Active" ? (
+
+                                                    <span className="px-3 py-2 rounded-lg bg-gray-100 text-gray-500 text-sm font-semibold">
+                                                        Not Active
+                                                    </span>
+
+                                                ) : (
+
+                                                    <button
+                                                        onClick={() =>
+                                                            handleCheckIn(
+                                                                student._id
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            actionId ===
+                                                            student._id
+                                                        }
+                                                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-semibold transition"
+                                                    >
+                                                        {actionId ===
+                                                        student._id
+                                                            ? "Processing..."
+                                                            : "Check In"}
+                                                    </button>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+                                    );
+                                })}
+
+                            </tbody>
+
+                        </table>
+
+                    </div>
 
                 </div>
 
             </div>
-        </div>
 
 
             {/* =========================
@@ -372,146 +624,189 @@ function Sessions() {
                     </h2>
 
                     <p className="text-gray-500 mt-1">
-                        View all recorded practice sessions.
+                        View student check-in, check-out and
+                        practice duration.
                     </p>
 
                 </div>
 
 
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[750px]">
 
-                        <thead>
+                    <div className="overflow-x-auto">
 
-                            <tr>
+                        <table className="w-full min-w-[950px]">
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Student
-                                </th>
+                            <thead>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Date
-                                </th>
+                                <tr>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Time
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Student
+                                    </th>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Type
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Date
+                                    </th>
 
-                                <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
-                                    Status
-                                </th>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Check In
+                                    </th>
 
-                            </tr>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Check Out
+                                    </th>
 
-                        </thead>
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Duration
+                                    </th>
 
+                                    <th className="px-6 py-4 bg-gray-100 text-left text-sm font-semibold uppercase">
+                                        Status
+                                    </th>
 
-                        <tbody>
+                                </tr>
 
-                            {filteredSessions.length > 0 ? (
-
-                                filteredSessions.map((session) => (
-
-                                    <tr
-                                        key={session._id}
-                                        className="odd:bg-white even:bg-gray-50 hover:bg-purple-50 transition"
-                                    >
-
-                                        {/* STUDENT */}
-
-                                        <td className="px-6 py-4 border-b">
-
-                                            <div className="font-medium">
-                                                {session.student?.name ||
-                                                    "Unknown"}
-                                            </div>
-
-                                            <div className="text-sm text-gray-500">
-                                                {session.student?.email || ""}
-                                            </div>
-
-                                        </td>
+                            </thead>
 
 
-                                        {/* DATE */}
+                            <tbody>
 
-                                        <td className="px-6 py-4 border-b">
+                                {filteredSessions.length > 0 ? (
 
-                                            {new Date(
-                                                session.date
-                                            ).toLocaleDateString("en-IN")}
+                                    filteredSessions.map((session) => (
 
-                                        </td>
+                                        <tr
+                                            key={session._id}
+                                            className="odd:bg-white even:bg-gray-50 hover:bg-purple-50 transition"
+                                        >
 
+                                            {/* STUDENT */}
 
-                                        {/* TIME */}
+                                            <td className="px-6 py-4 border-b">
 
-                                        <td className="px-6 py-4 border-b">
+                                                <div className="font-medium">
+                                                    {session.student?.name ||
+                                                        "Unknown"}
+                                                </div>
 
-                                            {new Date(
-                                                session.date
-                                            ).toLocaleTimeString("en-IN", {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            })}
+                                                <div className="text-sm text-gray-500">
+                                                    {session.student?.email ||
+                                                        ""}
+                                                </div>
 
-                                        </td>
-
-
-                                        {/* TYPE */}
-
-                                        <td className="px-6 py-4 border-b">
-
-                                            <span className="px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-700">
-                                                {session.type}
-                                            </span>
-
-                                        </td>
+                                            </td>
 
 
-                                        {/* STATUS */}
+                                            {/* DATE */}
 
-                                        <td className="px-6 py-4 border-b">
+                                            <td className="px-6 py-4 border-b">
 
-                                            <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700">
-                                                {session.status}
-                                            </span>
+                                                {new Date(
+                                                    session.checkIn
+                                                ).toLocaleDateString(
+                                                    "en-IN"
+                                                )}
 
+                                            </td>
+
+
+                                            {/* CHECK IN */}
+
+                                            <td className="px-6 py-4 border-b">
+
+                                                {new Date(
+                                                    session.checkIn
+                                                ).toLocaleTimeString(
+                                                    "en-IN",
+                                                    {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    }
+                                                )}
+
+                                            </td>
+
+
+                                            {/* CHECK OUT */}
+
+                                            <td className="px-6 py-4 border-b">
+
+                                                {session.checkOut
+                                                    ? new Date(
+                                                          session.checkOut
+                                                      ).toLocaleTimeString(
+                                                          "en-IN",
+                                                          {
+                                                              hour: "2-digit",
+                                                              minute: "2-digit",
+                                                          }
+                                                      )
+                                                    : "-"}
+
+                                            </td>
+
+
+                                            {/* DURATION */}
+
+                                            <td className="px-6 py-4 border-b">
+
+                                                {session.status ===
+                                                "Completed"
+                                                    ? formatMinutes(
+                                                          session.durationMinutes
+                                                      )
+                                                    : "In Progress"}
+
+                                            </td>
+
+
+                                            {/* STATUS */}
+
+                                            <td className="px-6 py-4 border-b">
+
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                                        session.status ===
+                                                        "Completed"
+                                                            ? "bg-green-100 text-green-700"
+                                                            : "bg-blue-100 text-blue-700"
+                                                    }`}
+                                                >
+                                                    {session.status}
+                                                </span>
+
+                                            </td>
+
+                                        </tr>
+
+                                    ))
+
+                                ) : (
+
+                                    <tr>
+
+                                        <td
+                                            colSpan="6"
+                                            className="px-6 py-12 text-center text-gray-500"
+                                        >
+                                            No sessions found.
                                         </td>
 
                                     </tr>
 
-                                ))
+                                )}
 
-                            ) : (
+                            </tbody>
 
-                                <tr>
+                        </table>
 
-                                    <td
-                                        colSpan="5"
-                                        className="px-6 py-12 text-center text-gray-500"
-                                    >
-                                        No sessions found.
-                                    </td>
-
-                                </tr>
-
-                            )}
-
-                        </tbody>
-
-                    </table>
+                    </div>
 
                 </div>
 
             </div>
 
-        </div>
         </div>
     );
 }

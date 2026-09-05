@@ -145,17 +145,23 @@ router.post("/verify", async (req, res) => {
         const payment = new Payment({
             student: studentId,
             amount: Number(amount),
-            
+            feeMonth: new Date(
+                new Date().getFullYear(),
+                new Date().getMonth(),
+                1
+            ),
             paymentDate: new Date(),
-            paymentMethod: "UPI",
+            paymentMethod: "Online",
             status: "Paid",
             transactionId: razorpay_payment_id,
             notes: `Razorpay Order: ${razorpay_order_id}`,
         });
-
+        
         await payment.save();
 
         student.fees = "Paid";
+        student.feeAmount = Number(amount);
+
         await student.save();
 
         const populatedPayment = await Payment.findById(payment._id)
@@ -255,6 +261,7 @@ router.post("/", async (req, res) => {
 
         // Update student's current fee status
         student.fees = payment.status;
+        student.feeAmount = Number(amount);
 
         await student.save();
 

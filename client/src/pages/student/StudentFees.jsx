@@ -5,6 +5,7 @@ function StudentFees() {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [paymentLoading, setPaymentLoading] = useState(false);
 
     const studentId = localStorage.getItem("studentId");
 
@@ -15,6 +16,7 @@ function StudentFees() {
                 setLoading(false);
                 return;
             }
+
 
             const [studentResponse, paymentsResponse] =
                 await Promise.all([
@@ -54,6 +56,150 @@ function StudentFees() {
     useEffect(() => {
         fetchData();
     }, []);
+
+    const handlePayment = async () => {
+    try {
+        if (!studentId) {
+            alert("Student not logged in.");
+            return;
+        }
+
+        if (!student?.feeAmount || Number(student.feeAmount) <= 0) {
+            alert("No valid fee amount is available for payment.");
+            return;
+        }
+
+        setPaymentLoading(true);
+
+        // Load Razorpay Checkout script
+        if (!window.Razorpay) {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement("script");
+
+                script.src = "https://checkout.razorpay.com/v1/checkout.js";
+                script.onload = resolve;
+                script.onerror = () =>
+                    reject(new Error("Failed to load Razorpay Checkout"));
+
+                document.body.appendChild(script);
+            });
+        }
+
+        // Create Razorpay order
+        const orderResponse = await fetch(
+            `${import.meta.env.VITE_API_URL}/api/payments/create-order`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    studentId,
+                    amount: Number(student.feeAmount),
+                }),
+            }
+        );
+
+        const orderData = await orderResponse.json();
+
+        if (!orderResponse.ok) {
+            throw new Error(
+                orderData.message || "Failed to create payment order"
+            );
+        }
+
+        const options = {
+            key: orderData.keyId,
+            amount: orderData.order.amount,
+            currency: orderData.order.currency,
+            name: "MELOPHILE",
+            description: "Academy Fee Payment",
+            order_id: orderData.order.id,
+
+            prefill: {
+                name: student.name,
+                email: student.email,
+                contact: student.phone,
+            },
+
+            theme: {
+                color: "#7c3aed",
+            },
+
+            handler: async function (response) {
+                try {
+                    const verifyResponse = await fetch(
+                        `${import.meta.env.VITE_API_URL}/api/payments/verify`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                studentId,
+                                amount: Number(student.feeAmount),
+                                razorpay_order_id:
+                                    response.razorpay_order_id,
+                                razorpay_payment_id:
+                                    response.razorpay_payment_id,
+                                razorpay_signature:
+                                    response.razorpay_signature,
+                            }),
+                        }
+                    );
+
+                    const verifyData = await verifyResponse.json();
+
+                    if (!verifyResponse.ok) {
+                        throw new Error(
+                            verifyData.message ||
+                                "Payment verification failed"
+                        );
+                    }
+
+                    alert("Payment successful!");
+
+                    await fetchData();
+                } catch (error) {
+                    console.error("Payment verification error:", error);
+                    alert(
+                        error.message ||
+                            "Payment was completed but verification failed."
+                    );
+                } finally {
+                    setPaymentLoading(false);
+                }
+            },
+
+            modal: {
+                ondismiss: function () {
+                    setPaymentLoading(false);
+                },
+            },
+        };
+
+        const razorpay = new window.Razorpay(options);
+
+        razorpay.on("payment.failed", function (response) {
+            console.error("Razorpay payment failed:", response.error);
+
+            alert(
+                response.error?.description ||
+                    "Payment failed. Please try again."
+            );
+
+            setPaymentLoading(false);
+        });
+
+        razorpay.open();
+    } catch (error) {
+        console.error("Payment error:", error);
+
+        alert(error.message || "Unable to start payment.");
+
+        setPaymentLoading(false);
+    }
+};
 
     if (loading) {
         return (
@@ -136,9 +282,11 @@ function StudentFees() {
 
                     {student.fees === "Pending" ? (
                         <button
-                            className="mt-3 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition"
+                            onClick={handlePayment}
+                            disabled={paymentLoading}
+                            className="mt-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white px-6 py-3 rounded-lg font-semibold transition"
                         >
-                            Pay Now
+                            {paymentLoading ? "Processing..." : "Pay Now"}
                         </button>
                     ) : (
                         <p className="mt-3 text-green-600 font-semibold">

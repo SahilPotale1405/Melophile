@@ -8,20 +8,26 @@ const sessionSchema = new mongoose.Schema(
             required: true,
         },
 
-        date: {
+        checkIn: {
             type: Date,
-            default: Date.now,
             required: true,
         },
 
-        type: {
-            type: String,
-            default: "Practice",
+        checkOut: {
+            type: Date,
+            default: null,
+        },
+
+        durationMinutes: {
+            type: Number,
+            default: 0,
+            min: 0,
         },
 
         status: {
             type: String,
-            default: "Present",
+            enum: ["Active", "Completed"],
+            default: "Active",
         },
     },
     {
